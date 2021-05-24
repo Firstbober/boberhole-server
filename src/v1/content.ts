@@ -1,0 +1,4 @@
+enum ContentStatus {
+	BH_CONTENT_INVALID_TYPE,
+	BH_CONTENT_INVALID_BODY
+}

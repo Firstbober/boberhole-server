@@ -1,0 +1,112 @@
+Rate limit: 80 req/min
+
+POST /api/account/sign_in
+POST /api/account/sign_up
+POST /api/account/log_out
+POST /api/account/:sid/revoke
+GET  /api/account/challenge/image
+
+GET  /api/user/email
+POST /api/user/change/info
+POST /api/user/change/email
+POST /api/user/change/password
+POST /api/user/reset/password
+POST /api/user/remove_account
+GET  /api/user/confirm_email/:uaid
+GET  /api/user/permissions
+
+GET  /api/user/:uid/info
+
+GET  /api/media/resource/:rid
+POST /api/media/resource/upload
+
+GET  /api/content/user/:uid
+GET  /api/content/user/:uid/:type
+GET  /api/content/:cid
+POST /api/content/add
+POST /api/content/remove/:cid
+GET  /api/content/:type/get_popular
+
+GET  /api/admin/list/users
+GET  /api/admin/list/users/unconfirmed_email
+GET  /api/admin/list/user/:uid/content
+POST /api/admin/remove/media/resource/:rid
+POST /api/admin/remove/content/:cid
+POST /api/admin/remove/content/:cid/comment/:coid
+POST /api/admin/remove/user/:uid
+POST /api/admin/user/:uid/set/permission
+
+GET  /api/search/:query
+
+=============================================
+
+Statuses:
+BH_SUCCESS - Success
+BH_RATE_LIMITED - Rate limited
+BH_ERROR - Error
+BH_INAVLID_AUTHORIZATION - Authorization token is invalid
+BH_BAD_JSON - Invalid JSON
+BH_NOT_FOUND - 404 of the API
+BH_UNKNOWN - Unknown error
+BH_NOT_PERMITTED - Not permitted
+BH_TOO_LARGE - Data is too large
+
+BH_SIGN_UP_USERNAME_TAKEN
+BH_SIGN_UP_EMAIL_TAKEN
+BH_SIGN_UP_IN_INVALID_FIELD
+BH_SIGN_UP_CHALLENGE_FAILED
+BH_SIGN_IN_EMAIL_NOT_VERIFIED
+
+BH_CONTENT_INVALID_TYPE
+BH_CONTENT_INVALID_BODY
+
+BH_FOLLOW_ALREADY_FOLLOWING
+
+-------------------------------------
+
+Generic response:
+{
+	"status": "BH_SUCCESS",
+	"content": {}
+}
+
+-------------------------------------
+
+Content types:
+
+{
+	"type": bh.content.type,
+	"content": content
+}
+
+bh.content.type.vote
+{
+	"attached_to": string (content id),
+	"up_vote": boolean (true for up, false for down)
+}
+
+bh.content.type.comment
+{
+	"attached_to": string (content id),
+	"content: string (max 2000 char)
+}
+
+bh.content.type.video
+{
+	"title": string (max 70 char),
+	"description": string (max 2000 char),
+	"video": string (content id),
+	"thumbnail": string (content id)
+}
+
+bh.content.type.game
+{
+	"title": string (max 70 char),
+	"original_authors": (array or null),
+	"release_date": (JSON Date or null),
+	"type": bh.content.game.type
+}
+[
+	bh.content.game.type.flash_player,
+	bh.content.game.type.html5
+]
