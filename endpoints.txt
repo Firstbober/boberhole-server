@@ -1,42 +1,59 @@
 Rate limit: 80 req/min
 
-POST /api/account/sign_in
-POST /api/account/sign_up
-POST /api/account/log_out
-POST /api/account/:sid/revoke
-GET  /api/account/challenge/image
+== Account ==
 
-GET  /api/user/email
-POST /api/user/change/info
-POST /api/user/change/email
-POST /api/user/change/password
-POST /api/user/reset/password
-POST /api/user/remove_account
-GET  /api/user/confirm_email/:uaid
-GET  /api/user/permissions
+-- Rate limit: 5 req/min --
+POST /api/v1/account/sign_in
+POST /api/v1/account/sign_up
+POST /api/v1/account/log_out
+GET  /api/v1/account/challenge/image
+GET  /api/v1/account/confirm_email/:activation_id
+-- Rate limit: 5 req/min --
+POST /api/v1/account/:session_id/revoke
 
-GET  /api/user/:uid/info
+== User ==
 
-GET  /api/media/resource/:rid
-POST /api/media/resource/upload
+GET  /api/v1/user/email
+-- Rate limit: 10 req/min --
+POST /api/v1/user/change/info
+POST /api/v1/user/change/email
+POST /api/v1/user/change/password
+# POST /api/v1/user/reset/password
+POST /api/v1/user/remove_account
+-- Rate limit: 10 req/min --
+GET  /api/v1/user/permissions
 
-GET  /api/content/user/:uid
-GET  /api/content/user/:uid/:type
-GET  /api/content/:cid
-POST /api/content/add
-POST /api/content/remove/:cid
-GET  /api/content/:type/get_popular
+GET  /api/v1/user/:uid/info
 
-GET  /api/admin/list/users
-GET  /api/admin/list/users/unconfirmed_email
-GET  /api/admin/list/user/:uid/content
-POST /api/admin/remove/media/resource/:rid
-POST /api/admin/remove/content/:cid
-POST /api/admin/remove/content/:cid/comment/:coid
-POST /api/admin/remove/user/:uid
-POST /api/admin/user/:uid/set/permission
+== Media ==
 
-GET  /api/search/:query
+GET  /api/v1/media/resource/:resource_id
+POST /api/v1/media/resource/upload (Rate limit: 5 req/min)
+
+== Content ==
+
+GET  /api/v1/content/user/:user_id/:page
+GET  /api/v1/content/user/:user_id/:type/:page
+GET  /api/v1/content/:content_id
+POST /api/v1/content/add (Rate limit: 30 req/min)
+POST /api/v1/content/remove/:content_id
+GET  /api/v1/content/:type/get_popular/:page
+
+== Admin ==
+
+GET  /api/v1/admin/list/users/:page
+GET  /api/v1/admin/list/users/unconfirmed_email/:page
+GET  /api/v1/admin/list/user/:user_id/content/:page
+POST /api/v1/admin/remove/media/resource/:resource_id
+POST /api/v1/admin/remove/content/:content_id
+POST /api/v1/admin/remove/user/:user_id
+POST /api/v1/admin/user/:user_id/get/permissions
+POST /api/v1/admin/user/:user_id/set/permissions
+POST /api/v1/admin/user/:user_id/remove/permissions
+
+== Search ==
+
+GET  /api/v1/search/:query/:page (Rate limit: 30 req/min)
 
 =============================================
 

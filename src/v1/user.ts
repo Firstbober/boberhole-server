@@ -53,7 +53,7 @@ export const Session = userDb.define('Session', {
 		type: DataTypes.TEXT,
 		allowNull: false
 	}
-})
+});
 
 User.sync();
 Session.sync();

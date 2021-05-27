@@ -1,12 +1,12 @@
 import { FastifyInstance } from "fastify";
-import { genBasicResponses, genAuthHeader, Status } from "./common";
+import { genBasicResponses, genAuthHeader, Status, generateIdForModel } from "./common";
 import config from "../../config/default";
 import * as dayjs from "dayjs";
 const captcha = require("nodejs-captcha");
 
 import { User, Session } from "./user";
+import { sendActivationEmail, verifyActivationId,  } from "./mail";
 import * as argon2 from "argon2";
-import * as cryptoRandomString from 'crypto-random-string';
 
 import { DataTypes, Sequelize } from "sequelize";
 const challengeDb = new Sequelize({
@@ -53,6 +53,15 @@ interface ISignUpBody {
 	password: string,
 	email: string,
 	challenge_response: string
+}
+
+interface ISignInBody {
+	username: string,
+	password: string
+}
+
+interface IConfirmEmailParams {
+	activation_id: string
 }
 
 export default function (app: FastifyInstance, _opts, done) {
@@ -144,21 +153,7 @@ export default function (app: FastifyInstance, _opts, done) {
 				return;
 			}
 
-			let user_id: string;
-			let found_good_id = false;
-
-			do {
-				user_id = cryptoRandomString({ length: 12, type: 'alphanumeric' });
-				let users = await User.findAll({
-					where: {
-						user_id: user_id
-					}
-				});
-
-				if (users.length == 0) {
-					found_good_id = true;
-				}
-			} while (!found_good_id);
+			let user_id = await generateIdForModel(User);
 
 			await User.create({
 				user_id: user_id,
@@ -170,11 +165,35 @@ export default function (app: FastifyInstance, _opts, done) {
 				})
 			});
 
+			sendActivationEmail(req.body.email, user_id);
+
+			// TODO: Do not send activation id for admin and grant him all perms
+
 			res.send({
 				status: Status.BH_SUCCESS,
 				content: {}
 			});
 		});
+	});
+
+	app.post<{
+		Body: ISignInBody
+	}>("/sign_in", {
+		schema: {
+			body: {
+				type: 'object',
+				properties: {
+					username: { type: 'string', minimum: 3, maxLength: 32, pattern: "[A-Za-z0-9_]+" },
+					password: { type: 'string', minimum: 12, maxLength: 255 }
+				},
+				required: ['username', 'password']
+			},
+			response: genBasicResponses({
+				token: { type: 'string' }
+			})
+		}
+	}, (req, res) => {
+		// TODO: Make sign in
 	});
 
 	app.get("/challenge/image", {
@@ -191,6 +210,28 @@ export default function (app: FastifyInstance, _opts, done) {
 			status: Status.BH_SUCCESS,
 			content: {
 				image: cap.image
+			}
+		});
+	});
+
+	app.get<{
+		Params: IConfirmEmailParams
+	}>("/confirm_email/:activation_id", {
+		schema: {
+			response: genBasicResponses({})
+		}
+	}, (req, res) => {
+		verifyActivationId(req.params.activation_id).then((result) => {
+			if(result) {
+				res.send({
+					status: Status.BH_SUCCESS,
+					content: ""
+				});
+			} else {
+				res.code(400).send({
+					status: Status.BH_ERROR,
+					content: ""
+				});
 			}
 		});
 	});

@@ -54,3 +54,25 @@ export function genBasicResponses(content: any) {
 		}
 	}
 }
+
+import * as cryptoRandomString from 'crypto-random-string';
+
+export async function generateIdForModel(model: any, len: number = 12) {
+	let id: string;
+	let found_good_id = false;
+
+	do {
+		id = cryptoRandomString({ length: len, type: 'alphanumeric' });
+		let models = await model.findAll({
+			where: {
+				id: id
+			}
+		});
+
+		if (models.length == 0) {
+			found_good_id = true;
+		}
+	} while (!found_good_id);
+
+	return id;
+}
