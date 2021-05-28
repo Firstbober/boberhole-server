@@ -55,5 +55,9 @@ export const Session = userDb.define('Session', {
 	}
 });
 
+export function generateSessionToken(session_id: string, user_id: string) {
+	return btoa(`${user_id};${session_id};${+Date.now()}`);
+}
+
 User.sync();
 Session.sync();

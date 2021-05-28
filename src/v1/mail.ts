@@ -32,7 +32,7 @@ const transport = nodemailer.createTransport({
 });
 
 export async function sendActivationEmail(email: string, user_id: string) {
-	let id = await generateIdForModel(Activation);
+	let id = await generateIdForModel(Activation, "activation_id");
 
 	Activation.create({
 		activation_id: id,

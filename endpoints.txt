@@ -9,6 +9,7 @@ POST /api/v1/account/log_out
 GET  /api/v1/account/challenge/image
 GET  /api/v1/account/confirm_email/:activation_id
 -- Rate limit: 5 req/min --
+GET  /api/v1/account/sessions
 POST /api/v1/account/:session_id/revoke
 
 == User ==
@@ -73,6 +74,7 @@ BH_SIGN_UP_EMAIL_TAKEN
 BH_SIGN_UP_IN_INVALID_FIELD
 BH_SIGN_UP_CHALLENGE_FAILED
 BH_SIGN_IN_EMAIL_NOT_VERIFIED
+BH_SIGN_IN_USER_NOT_FOUND
 
 BH_CONTENT_INVALID_TYPE
 BH_CONTENT_INVALID_BODY

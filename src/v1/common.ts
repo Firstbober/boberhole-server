@@ -56,17 +56,20 @@ export function genBasicResponses(content: any) {
 }
 
 import * as cryptoRandomString from 'crypto-random-string';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { Session } from './user';
 
-export async function generateIdForModel(model: any, len: number = 12) {
+export async function generateIdForModel(model: any, model_name: string, len: number = 12) {
 	let id: string;
 	let found_good_id = false;
 
+	let where = {};
+
 	do {
 		id = cryptoRandomString({ length: len, type: 'alphanumeric' });
+		where[model_name + "_id"] = id;
 		let models = await model.findAll({
-			where: {
-				id: id
-			}
+			where: where
 		});
 
 		if (models.length == 0) {
@@ -75,4 +78,39 @@ export async function generateIdForModel(model: any, len: number = 12) {
 	} while (!found_good_id);
 
 	return id;
+}
+
+
+export async function getAuthorizationFromHeader(req: FastifyRequest, res: FastifyReply) {
+	const invalid_authorization = () => {
+		res.code(400).send({
+			status: Status.BH_INVALID_AUTHORIZATION,
+			content: ""
+		});
+		return false;
+	}
+
+	if (req.headers.authorization == undefined) {
+		return invalid_authorization();
+	}
+
+	let token = atob(req.headers.authorization);
+	let token_split = token.split(";");
+
+	if (token_split.length != 3) {
+		return invalid_authorization();
+	}
+
+	let sessions = await Session.findAll({
+		where: {
+			session_id: token_split[1],
+			user_id: token_split[0]
+		}
+	});
+
+	if (sessions.length == 0) {
+		return invalid_authorization();
+	}
+
+	return true;
 }

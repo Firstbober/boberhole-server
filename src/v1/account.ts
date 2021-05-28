@@ -4,8 +4,8 @@ import config from "../../config/default";
 import * as dayjs from "dayjs";
 const captcha = require("nodejs-captcha");
 
-import { User, Session } from "./user";
-import { sendActivationEmail, verifyActivationId,  } from "./mail";
+import { User, Session, generateSessionToken } from "./user";
+import { sendActivationEmail, verifyActivationId, isUserVerified } from "./mail";
 import * as argon2 from "argon2";
 
 import { DataTypes, Sequelize } from "sequelize";
@@ -45,7 +45,8 @@ enum StatusAccount {
 	BH_SIGN_UP_EMAIL_TAKEN = "BH_SIGN_UP_EMAIL_TAKEN",
 	BH_SIGN_UP_IN_INVALID_FIELD = "BH_SIGN_UP_IN_INVALID_FIELD",
 	BH_SIGN_UP_CHALLENGE_FAILED = "BH_SIGN_UP_CHALLENGE_FAILED",
-	BH_SIGN_IN_EMAIL_NOT_VERIFIED = "BH_SIGN_IN_EMAIL_NOT_VERIFIED"
+	BH_SIGN_IN_EMAIL_NOT_VERIFIED = "BH_SIGN_IN_EMAIL_NOT_VERIFIED",
+	BH_SIGN_IN_USER_NOT_FOUND = "BH_SIGN_IN_USER_NOT_FOUND"
 }
 
 interface ISignUpBody {
@@ -153,7 +154,7 @@ export default function (app: FastifyInstance, _opts, done) {
 				return;
 			}
 
-			let user_id = await generateIdForModel(User);
+			let user_id = await generateIdForModel(User, "user_id");
 
 			await User.create({
 				user_id: user_id,
@@ -193,7 +194,78 @@ export default function (app: FastifyInstance, _opts, done) {
 			})
 		}
 	}, (req, res) => {
-		// TODO: Make sign in
+		if (
+			!(
+				(
+					req.body.username.length >= 3 &&
+					req.body.username.length <= 32 &&
+					/[A-Za-z0-9_]+/.test(req.body.username)
+				)
+				&&
+				(
+					req.body.password.length >= 12 &&
+					req.body.username.length <= 255
+				)
+			)
+		) {
+			res.code(400).send({
+				status: StatusAccount.BH_SIGN_UP_IN_INVALID_FIELD,
+				content: ""
+			});
+			return;
+		}
+
+		User.findAll({
+			where: {
+				username: req.body.username
+			}
+		}).then(async (users) => {
+			if (users.length == 0) {
+				res.code(400).send({
+					status: StatusAccount.BH_SIGN_IN_USER_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let user = users[0];
+
+			if (!(await argon2.verify(user.getDataValue("password"), req.body.password, {
+				type: argon2.argon2id
+			}))) {
+				res.code(400).send({
+					status: StatusAccount.BH_SIGN_UP_IN_INVALID_FIELD,
+					content: ""
+				});
+				return;
+			}
+
+			if(!(await isUserVerified(user.getDataValue("user_id")))) {
+				res.code(400).send({
+					status: StatusAccount.BH_SIGN_IN_EMAIL_NOT_VERIFIED,
+					content: ""
+				});
+
+				sendActivationEmail(user.getDataValue("email"), user.getDataValue("user_id"));
+
+				return;
+			}
+
+			let session_id = await generateIdForModel(Session, "session");
+			Session.create({
+				session_id: session_id,
+				user_id: user.getDataValue("user_id"),
+				user_agent: req.headers["user-agent"]
+			}).then(() => {
+				res.send({
+					status: Status.BH_SUCCESS,
+					content: {
+						token: generateSessionToken(session_id, user.getDataValue("user_id"))
+					}
+				});
+				return;
+			});
+		});
 	});
 
 	app.get("/challenge/image", {
@@ -202,7 +274,7 @@ export default function (app: FastifyInstance, _opts, done) {
 				image: { type: 'string' }
 			})
 		}
-	}, (req, res) => {
+	}, (_req, res) => {
 		let cap = captcha();
 		Challenge.create({ value: cap.value });
 
@@ -222,7 +294,7 @@ export default function (app: FastifyInstance, _opts, done) {
 		}
 	}, (req, res) => {
 		verifyActivationId(req.params.activation_id).then((result) => {
-			if(result) {
+			if (result) {
 				res.send({
 					status: Status.BH_SUCCESS,
 					content: ""
