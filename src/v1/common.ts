@@ -80,14 +80,18 @@ export async function generateIdForModel(model: any, model_name: string, len: nu
 	return id;
 }
 
+interface IAuthorization {
+	user_id: string,
+	session_id: string
+}
 
-export async function getAuthorizationFromHeader(req: FastifyRequest, res: FastifyReply) {
+export async function getAuthorizationFromHeader(req: FastifyRequest, res: FastifyReply): Promise<IAuthorization> {
 	const invalid_authorization = () => {
 		res.code(400).send({
 			status: Status.BH_INVALID_AUTHORIZATION,
 			content: ""
 		});
-		return false;
+		return undefined;
 	}
 
 	if (req.headers.authorization == undefined) {
@@ -112,5 +116,8 @@ export async function getAuthorizationFromHeader(req: FastifyRequest, res: Fasti
 		return invalid_authorization();
 	}
 
-	return true;
+	return {
+		user_id: token_split[0],
+		session_id: token_split[1]
+	} as IAuthorization;
 }

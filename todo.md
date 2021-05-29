@@ -1,7 +1,7 @@
 # Boberhole server
 
 ## Endpoints
-- [ ] Account
+- [X] Account
 - [ ] User
 - [ ] Media
 - [ ] Content

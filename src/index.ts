@@ -16,7 +16,10 @@ app.register(fastify_swagger, {
 			version: VERSION
 		},
 		schemes: ['http'],
-		consumes: ['application/json']
+		consumes: ['application/json'],
+		tags: [
+			{ name: "Account", description: "Account related stuff" }
+		]
 	},
 	staticCSP: true,
 	transformStaticCSP: (header) => header,

@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { genBasicResponses, genAuthHeader, Status, generateIdForModel } from "./common";
+import { genBasicResponses, genAuthHeader, Status, generateIdForModel, getAuthorizationFromHeader } from "./common";
 import config from "../../config/default";
 import * as dayjs from "dayjs";
 const captcha = require("nodejs-captcha");
@@ -65,11 +65,16 @@ interface IConfirmEmailParams {
 	activation_id: string
 }
 
-export default function (app: FastifyInstance, _opts, done) {
+interface IRevokeSessionParams {
+	session_id: string
+}
+
+export default function (app: FastifyInstance, _opts: any, done: any) {
 	app.post<{
 		Body: ISignUpBody
 	}>("/sign_up", {
 		schema: {
+			tags: ["Account"],
 			body: {
 				type: 'object',
 				properties: {
@@ -181,6 +186,7 @@ export default function (app: FastifyInstance, _opts, done) {
 		Body: ISignInBody
 	}>("/sign_in", {
 		schema: {
+			tags: ["Account"],
 			body: {
 				type: 'object',
 				properties: {
@@ -240,7 +246,7 @@ export default function (app: FastifyInstance, _opts, done) {
 				return;
 			}
 
-			if(!(await isUserVerified(user.getDataValue("user_id")))) {
+			if (!(await isUserVerified(user.getDataValue("user_id")))) {
 				res.code(400).send({
 					status: StatusAccount.BH_SIGN_IN_EMAIL_NOT_VERIFIED,
 					content: ""
@@ -268,8 +274,43 @@ export default function (app: FastifyInstance, _opts, done) {
 		});
 	});
 
+	app.post("/log_out", {
+		schema: {
+			tags: ["Account"],
+			headers: genAuthHeader(),
+			response: genBasicResponses({})
+		}
+	}, (req, res) => {
+		getAuthorizationFromHeader(req, res).then(async (auth) => {
+			if (auth) {
+				let sessions = await Session.findAll({
+					where: {
+						session_id: auth.session_id
+					}
+				});
+
+				if (sessions.length == 0) {
+					res.code(400).send({
+						status: Status.BH_ERROR,
+						content: ""
+					});
+					return;
+				}
+
+				sessions[0].destroy().then(() => {
+					res.send({
+						status: Status.BH_SUCCESS,
+						content: {}
+					});
+					return;
+				});
+			}
+		});
+	});
+
 	app.get("/challenge/image", {
 		schema: {
+			tags: ["Account"],
 			response: genBasicResponses({
 				image: { type: 'string' }
 			})
@@ -290,6 +331,7 @@ export default function (app: FastifyInstance, _opts, done) {
 		Params: IConfirmEmailParams
 	}>("/confirm_email/:activation_id", {
 		schema: {
+			tags: ["Account"],
 			response: genBasicResponses({})
 		}
 	}, (req, res) => {
@@ -303,6 +345,82 @@ export default function (app: FastifyInstance, _opts, done) {
 				res.code(400).send({
 					status: Status.BH_ERROR,
 					content: ""
+				});
+			}
+		});
+	});
+
+	app.get("/sessions", {
+		schema: {
+			tags: ["Account"],
+			headers: genAuthHeader(),
+			response: genBasicResponses({
+				sessions: {
+					type: 'array'
+				}
+			})
+		}
+	}, (req, res) => {
+		getAuthorizationFromHeader(req, res).then(async (auth) => {
+			if (auth) {
+				let sessions = await Session.findAll({
+					where: {
+						user_id: auth.user_id
+					}
+				});
+
+				let array_resp = [];
+
+				sessions.forEach((session) => {
+					array_resp.push({
+						session_id: session.getDataValue("session_id"),
+						user_agent: session.getDataValue("user_agent")
+					});
+					console.log('aaa');
+				});
+
+				res.send({
+					status: Status.BH_SUCCESS,
+					content: {
+						sessions: array_resp
+					}
+				});
+				return;
+			}
+		});
+	});
+
+	app.get<{
+		Params: IRevokeSessionParams
+	}>("/:session_id/revoke", {
+		schema: {
+			tags: ["Account"],
+			headers: genAuthHeader(),
+			response: genBasicResponses({})
+		}
+	}, (req, res) => {
+		getAuthorizationFromHeader(req, res).then(async (auth) => {
+			if (auth) {
+				let sessions = await Session.findAll({
+					where: {
+						session_id: req.params.session_id,
+						user_id: auth.user_id
+					}
+				});
+
+				if (sessions.length == 0) {
+					res.code(400).send({
+						status: Status.BH_ERROR,
+						content: ""
+					});
+					return;
+				}
+
+				sessions[0].destroy().then(() => {
+					res.send({
+						status: Status.BH_SUCCESS,
+						content: {}
+					});
 				});
 			}
 		});

@@ -10,7 +10,7 @@ GET  /api/v1/account/challenge/image
 GET  /api/v1/account/confirm_email/:activation_id
 -- Rate limit: 5 req/min --
 GET  /api/v1/account/sessions
-POST /api/v1/account/:session_id/revoke
+GET  /api/v1/account/:session_id/revoke
 
 == User ==
 
