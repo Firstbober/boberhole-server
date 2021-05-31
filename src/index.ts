@@ -4,6 +4,8 @@ import fastify_swagger from "fastify-swagger";
 
 import { VERSION, Status } from "./v1/common";
 import account from "./v1/account";
+import user from "./v1/user";
+import { exit } from "process";
 
 const app = fastify({
 	logger: true
@@ -18,7 +20,8 @@ app.register(fastify_swagger, {
 		schemes: ['http'],
 		consumes: ['application/json'],
 		tags: [
-			{ name: "Account", description: "Account related stuff" }
+			{ name: "Account", description: "Account related stuff" },
+			{ name: "User", description: "User related stuff" }
 		]
 	},
 	staticCSP: true,
@@ -27,6 +30,7 @@ app.register(fastify_swagger, {
 })
 
 app.register(account, { prefix: "/api/v1/account" });
+app.register(user, { prefix: "/api/v1/user" });
 
 app.setErrorHandler((error, _req, res) => {
 	if (error.validation) {
@@ -36,9 +40,9 @@ app.setErrorHandler((error, _req, res) => {
 		});
 	}
 
-	if(error.stack) {
+	if (error.stack) {
 		let status: Status;
-		switch(error.message) {
+		switch (error.message) {
 			case "Unexpected end of JSON input":
 				status = Status.BH_BAD_JSON;
 				break;
@@ -56,6 +60,11 @@ app.setErrorHandler((error, _req, res) => {
 });
 
 app.listen(config.www.port, (_err, address) => {
+	if (_err) {
+		console.error(_err);
+		exit(1);
+	}
+
 	console.log(`Server listening on ${address}`);
 	app.swagger();
 });

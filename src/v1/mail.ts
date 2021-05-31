@@ -21,6 +21,8 @@ export const Activation = userDb.define('Activation', {
 	}
 });
 
+Activation.sync();
+
 const transport = nodemailer.createTransport({
 	host: config.mail.smtp.host,
 	port: config.mail.smtp.port,
@@ -32,17 +34,17 @@ const transport = nodemailer.createTransport({
 });
 
 export async function sendActivationEmail(email: string, user_id: string) {
-	let id = await generateIdForModel(Activation, "activation_id");
+	let id = await generateIdForModel(Activation, "activation");
 
 	Activation.create({
 		activation_id: id,
 		user_id: user_id
 	}).then(async () => {
 		await transport.sendMail({
-			from: `Boberhole Account System`,
+			from: `Boberhole Account System ${config.mail.smtp.auth.user}`,
 			to: email,
 			subject: "Verify e-mail for your Boberhole Account",
-			text: `Go to this link to verify your account: ${config.www.baseURL}/api/v1/user/confirm_email/${id}`
+			text: `Go to this link to verify your account: ${config.www.baseURL}/api/v1/account/confirm_email/${id}`
 		});
 	});
 }

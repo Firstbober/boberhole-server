@@ -6,6 +6,7 @@ const captcha = require("nodejs-captcha");
 
 import { User, Session, generateSessionToken } from "./user";
 import { sendActivationEmail, verifyActivationId, isUserVerified } from "./mail";
+import { AdminPermissions } from "./admin";
 import * as argon2 from "argon2";
 
 import { DataTypes, Sequelize } from "sequelize";
@@ -86,7 +87,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				required: ['username', 'password', 'email', 'challenge_response']
 			},
 			response: genBasicResponses({})
-		}
+		} as any
 	}, (req, res) => {
 		Challenge.findAll({}).then(async (value) => {
 			let failed = value.length > 0 ? false : true;
@@ -122,7 +123,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					&&
 					(
 						req.body.password.length >= 12 &&
-						req.body.username.length <= 255
+						req.body.password.length <= 255
 					)
 					&& req.body.email.length <= 255
 					&& req.body.challenge_response.length <= 255
@@ -159,7 +160,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				return;
 			}
 
-			let user_id = await generateIdForModel(User, "user_id");
+			let user_id = await generateIdForModel(User, "user");
 
 			await User.create({
 				user_id: user_id,
@@ -168,12 +169,11 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				avatar: null,
 				password: await argon2.hash(req.body.password, {
 					type: argon2.argon2id
-				})
+				}),
+				permissions: await User.count() == 0 ? JSON.stringify([AdminPermissions.ADMIN_ALL]) : null
 			});
 
 			sendActivationEmail(req.body.email, user_id);
-
-			// TODO: Do not send activation id for admin and grant him all perms
 
 			res.send({
 				status: Status.BH_SUCCESS,
@@ -198,7 +198,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				token: { type: 'string' }
 			})
-		}
+		} as any
 	}, (req, res) => {
 		if (
 			!(
@@ -279,7 +279,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			tags: ["Account"],
 			headers: genAuthHeader(),
 			response: genBasicResponses({})
-		}
+		} as any
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -314,7 +314,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				image: { type: 'string' }
 			})
-		}
+		} as any
 	}, (_req, res) => {
 		let cap = captcha();
 		Challenge.create({ value: cap.value });
@@ -333,7 +333,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 		schema: {
 			tags: ["Account"],
 			response: genBasicResponses({})
-		}
+		} as any
 	}, (req, res) => {
 		verifyActivationId(req.params.activation_id).then((result) => {
 			if (result) {
@@ -359,7 +359,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					type: 'array'
 				}
 			})
-		}
+		} as any
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -397,7 +397,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			tags: ["Account"],
 			headers: genAuthHeader(),
 			response: genBasicResponses({})
-		}
+		} as any
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {

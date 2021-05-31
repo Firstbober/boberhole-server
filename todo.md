@@ -2,7 +2,7 @@
 
 ## Endpoints
 - [X] Account
-- [ ] User
+- [X] User
 - [ ] Media
 - [ ] Content
 - [ ] Admin

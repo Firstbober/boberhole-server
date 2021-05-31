@@ -4,7 +4,7 @@ export enum Status {
 	BH_ERROR = "BH_ERROR",
 	BH_INVALID_AUTHORIZATION = "BH_INVALID_AUTHORIZATION",
 	BH_BAD_JSON = "BH_BAD_JSON",
-	BN_NOT_FOUND = "BN_NOT_FOUND",
+	BH_NOT_FOUND = "BH_NOT_FOUND",
 	BH_UNKNOWN = "BH_UNKNOWN",
 	BH_TOO_LARGE = "BH_TOO_LARGE"
 }
@@ -33,7 +33,7 @@ export function genAuthHeader() {
 	};
 }
 
-export function genBasicResponses(content: any) {
+export function genBasicResponses(content: any, error_content: any = { type: 'string' }) {
 	return {
 		200: {
 			type: 'object',
@@ -49,7 +49,7 @@ export function genBasicResponses(content: any) {
 			type: 'object',
 			properties: {
 				status: { type: 'string', enum: enumToKeyArray(Status) },
-				content: { type: 'string' }
+				content: error_content
 			}
 		}
 	}

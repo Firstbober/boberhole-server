@@ -15,16 +15,12 @@ GET  /api/v1/account/:session_id/revoke
 == User ==
 
 GET  /api/v1/user/email
+GET  /api/v1/user/:user_id/info
 -- Rate limit: 10 req/min --
 POST /api/v1/user/change/info
-POST /api/v1/user/change/email
-POST /api/v1/user/change/password
-# POST /api/v1/user/reset/password
 POST /api/v1/user/remove_account
 -- Rate limit: 10 req/min --
 GET  /api/v1/user/permissions
-
-GET  /api/v1/user/:uid/info
 
 == Media ==
 
@@ -78,8 +74,6 @@ BH_SIGN_IN_USER_NOT_FOUND
 
 BH_CONTENT_INVALID_TYPE
 BH_CONTENT_INVALID_BODY
-
-BH_FOLLOW_ALREADY_FOLLOWING
 
 -------------------------------------
 
