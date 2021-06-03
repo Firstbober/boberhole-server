@@ -24,8 +24,9 @@ GET  /api/v1/user/permissions
 
 == Media ==
 
-GET  /api/v1/media/resource/:resource_id
-POST /api/v1/media/resource/upload (Rate limit: 5 req/min)
+GET /api/v1/media/resource/:resource_id/info
+GET /api/v1/media/resource/:resource_id/:filename
+PUT /api/v1/media/resource/upload/:resource_info (Rate limit: 5 req/min)
 
 == Content ==
 
@@ -35,6 +36,7 @@ GET  /api/v1/content/:content_id
 POST /api/v1/content/add (Rate limit: 30 req/min)
 POST /api/v1/content/remove/:content_id
 GET  /api/v1/content/:type/get_popular/:page
+POST /api/v1/content/:content_id/edit
 
 == Admin ==
 
@@ -64,6 +66,7 @@ BH_NOT_FOUND - 404 of the API
 BH_UNKNOWN - Unknown error
 BH_NOT_PERMITTED - Not permitted
 BH_TOO_LARGE - Data is too large
+BH_NO_DATA - No data
 
 BH_SIGN_UP_USERNAME_TAKEN
 BH_SIGN_UP_EMAIL_TAKEN
@@ -87,39 +90,56 @@ Generic response:
 
 Content types:
 
+# Creation
 {
 	"type": bh.content.type,
 	"content": content
 }
 
-bh.content.type.vote
+# Receive
+{
+	"type": bh.content.type,
+	"by_user": string (user id),
+	"created_on": string (date),
+	"content_id": string (content id)
+	"content": content (object)
+}
+
+bh.content.type.vote (editable: ["up_vote"])
 {
 	"attached_to": string (content id),
 	"up_vote": boolean (true for up, false for down)
 }
 
-bh.content.type.comment
+bh.content.type.comment (editable: ["content"])
 {
 	"attached_to": string (content id),
 	"content: string (max 2000 char)
 }
 
-bh.content.type.video
+bh.content.type.video (editable: ["title", "description"])
 {
 	"title": string (max 70 char),
 	"description": string (max 2000 char),
-	"video": string (content id),
-	"thumbnail": string (content id)
+	"video": string (resource id),
+	"thumbnail": string (resource id)
 }
 
-bh.content.type.game
+bh.content.type.game (editable: ["title"])
 {
 	"title": string (max 70 char),
 	"original_authors": (array or null),
 	"release_date": (JSON Date or null),
-	"type": bh.content.game.type
+	"type": bh.content.game.type,
+	"game": string (resource id)
 }
 [
 	bh.content.game.type.flash_player,
 	bh.content.game.type.html5
 ]
+
+bh.content.type.booru.image
+{
+	"tags": [ string ],
+	"image": string (resource id)
+}
