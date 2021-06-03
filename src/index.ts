@@ -1,15 +1,21 @@
 import fastify from "fastify";
 import config from "../config/default";
+
 import fastify_swagger from "fastify-swagger";
+import fastify_multipart from "fastify-multipart";
 
 import { VERSION, Status } from "./v1/common";
 import account from "./v1/account";
 import user from "./v1/user";
+import media from "./v1/media";
+import "./v1/content";
+
 import { exit } from "process";
 
 const app = fastify({
 	logger: true
 });
+
 app.register(fastify_swagger, {
 	routePrefix: "/docs",
 	swagger: {
@@ -21,16 +27,19 @@ app.register(fastify_swagger, {
 		consumes: ['application/json'],
 		tags: [
 			{ name: "Account", description: "Account related stuff" },
-			{ name: "User", description: "User related stuff" }
+			{ name: "User", description: "User related stuff" },
+			{ name: "Media", description: "Resource uploading and downloading"}
 		]
 	},
 	staticCSP: true,
 	transformStaticCSP: (header) => header,
 	exposeRoute: true
-})
+});
+app.register(fastify_multipart);
 
 app.register(account, { prefix: "/api/v1/account" });
 app.register(user, { prefix: "/api/v1/user" });
+app.register(media, { prefix: "/api/v1/media" });
 
 app.setErrorHandler((error, _req, res) => {
 	if (error.validation) {

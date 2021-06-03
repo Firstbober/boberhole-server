@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifySchema } from "fastify";
 import { genBasicResponses, genAuthHeader, Status, generateIdForModel, getAuthorizationFromHeader } from "./common";
 import config from "../../config/default";
 import * as dayjs from "dayjs";
@@ -87,7 +87,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				required: ['username', 'password', 'email', 'challenge_response']
 			},
 			response: genBasicResponses({})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		Challenge.findAll({}).then(async (value) => {
 			let failed = value.length > 0 ? false : true;
@@ -198,7 +198,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				token: { type: 'string' }
 			})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		if (
 			!(
@@ -279,7 +279,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			tags: ["Account"],
 			headers: genAuthHeader(),
 			response: genBasicResponses({})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -314,7 +314,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				image: { type: 'string' }
 			})
-		} as any
+		}  as FastifySchema
 	}, (_req, res) => {
 		let cap = captcha();
 		Challenge.create({ value: cap.value });
@@ -333,7 +333,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 		schema: {
 			tags: ["Account"],
 			response: genBasicResponses({})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		verifyActivationId(req.params.activation_id).then((result) => {
 			if (result) {
@@ -359,7 +359,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					type: 'array'
 				}
 			})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -397,7 +397,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			tags: ["Account"],
 			headers: genAuthHeader(),
 			response: genBasicResponses({})
-		} as any
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {

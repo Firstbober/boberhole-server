@@ -3,7 +3,7 @@
 ## Endpoints
 - [X] Account
 - [X] User
-- [ ] Media
+- [X] Media
 - [ ] Content
 - [ ] Admin
 - [ ] Search

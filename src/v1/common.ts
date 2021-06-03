@@ -6,7 +6,8 @@ export enum Status {
 	BH_BAD_JSON = "BH_BAD_JSON",
 	BH_NOT_FOUND = "BH_NOT_FOUND",
 	BH_UNKNOWN = "BH_UNKNOWN",
-	BH_TOO_LARGE = "BH_TOO_LARGE"
+	BH_TOO_LARGE = "BH_TOO_LARGE",
+	BH_NO_DATA = "BH_NO_DATA"
 }
 
 function enumToKeyArray(status: any) {

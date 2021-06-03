@@ -1,5 +1,5 @@
 import config from "../../config/default";
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifySchema } from "fastify";
 import { genBasicResponses, genAuthHeader, Status, generateIdForModel, getAuthorizationFromHeader } from "./common";
 import * as argon2 from "argon2";
 import { Events, sendEvent, listenEvent } from "../events";
@@ -117,7 +117,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				email: { type: 'string' }
 			})
-		}
+		} as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then((auth) => {
 			if (auth) {
@@ -147,7 +147,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				avatar: { type: 'string' },
 				creation_date: { type: 'string' }
 			})
-		}
+		}  as FastifySchema
 	}, (req, res) => {
 		User.findAll({
 			where: {
@@ -191,7 +191,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				changed: { type: 'array' }
 			})
-		}
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -279,7 +279,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				required: ['password']
 			},
 			response: genBasicResponses({})
-		}
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then((auth) => {
 			if (auth) {
@@ -327,7 +327,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				permissions: { type: 'array' }
 			})
-		}
+		}  as FastifySchema
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
