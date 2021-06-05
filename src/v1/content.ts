@@ -240,6 +240,11 @@ const Lookup = contentDb.define('Lookup', {
 		allowNull: false
 	},
 
+	user_id: {
+		type: DataTypes.TEXT,
+		allowNull: false
+	},
+
 	type: {
 		type: DataTypes.TEXT,
 		allowNull: false
@@ -251,14 +256,32 @@ Lookup.sync();
 import { genBasicResponses, genAuthHeader, Status, generateIdForModel, getAuthorizationFromHeader } from "./common";
 import { FastifyInstance, FastifySchema } from "fastify";
 import { checkIfResourceExists, markAsUsedInContent, removeContentFromBeingUsed } from "./media";
+import { User } from "./user";
 
 interface IContentAddBody {
 	type: string,
 	content: Object
 }
 
-interface IOnlyContentIDParam {
+interface IOnlyContentIdParam {
 	content_id: string
+}
+
+interface IGetContentByUserId {
+	user_id: string,
+	page: number
+}
+
+interface IGetContentByUserIdAndType {
+	user_id: string,
+	type: string,
+	page: number
+}
+
+interface IGetAllContentTypeSorted {
+	type: string,
+	sort: string,
+	page: number
 }
 
 async function validateObjectByContentType(content_type: IContentType, object: Object): Promise<[boolean, ContentStatus | null]> {
@@ -390,6 +413,32 @@ async function getContentFromLookup(lookup_id: string): Promise<ILookedUpContent
 	};
 }
 
+async function getUserPageZero(user_id: string): Promise<Object> {
+	let total = await Lookup.count({ where: { user_id: user_id } });
+	let contents: Array<{
+		type: string,
+		total: number
+	}> = [];
+
+	for (const type of ContentTypes.types) {
+		let model = contentModels.get(type.name);
+		let total = await model.count({ where: { user_id: user_id } });
+
+		contents.push({
+			type: type.name,
+			total: total
+		});
+	}
+
+	return {
+		total: total,
+		contents: contents,
+		pages: Math.ceil(total / 32),
+		per_page: 32,
+		is_there_next_page: total > 0
+	};
+}
+
 export default function (app: FastifyInstance, _opts: any, done: any) {
 	app.post<{
 		Body: IContentAddBody
@@ -439,6 +488,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			await Lookup.create({
 				lookup_id: lookup_id,
 				content_id: content_id,
+				user_id: auth.user_id,
 				type: req.body.type
 			});
 
@@ -462,7 +512,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 	});
 
 	app.post<{
-		Params: IOnlyContentIDParam
+		Params: IOnlyContentIdParam
 	}>("/remove/:content_id", {
 		schema: {
 			tags: ["Content"],
@@ -518,6 +568,318 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					content: {}
 				});
 			});
+		}
+	});
+
+	app.get<{
+		Params: IOnlyContentIdParam
+	}>("/:content_id", {
+		schema: {
+			tags: ["Content"],
+			params: {
+				type: 'object',
+				properties: {
+					content_id: { type: 'string' }
+				}
+			},
+			response: genBasicResponses({
+				type: { type: 'string' },
+				data: { type: 'object', additionalProperties: {} }
+			})
+		} as FastifySchema
+	}, (req, res) => {
+		getContentFromLookup(req.params.content_id).then(content => {
+			if (content == null) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let content_type = ContentTypes.getTypeByName(content.type);
+			let contentToReturn = {};
+
+			content_type.fields.forEach(field => {
+				contentToReturn[field.name] = content.content.getDataValue(field.name);
+			});
+
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					type: content.type,
+					data: contentToReturn
+				}
+			});
+		});
+	});
+
+	app.get<{
+		Params: IGetContentByUserId
+	}>("/user/:user_id/:page", {
+		schema: {
+			tags: ["Content"],
+			params: {
+				type: 'object',
+				properties: {
+					user_id: { type: 'string' },
+					page: { type: 'number' }
+				}
+			},
+			response: genBasicResponses({
+				page: { type: 'object', additionalProperties: {} }
+			})
+		} as FastifySchema
+	}, async (req, res) => {
+		if (await User.findOne({ where: { user_id: req.params.user_id } }) == null) {
+			res.code(400).send({
+				status: Status.BH_NOT_FOUND,
+				content: ""
+			});
+			return;
+		}
+
+		if (req.params.page == 0) {
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: await getUserPageZero(req.params.user_id)
+				}
+			});
+		} else if (req.params.page > 0) {
+			let entries = await Lookup.findAll({
+				where: {
+					user_id: req.params.user_id
+				},
+				limit: 32,
+				offset: (req.params.page - 1) * 32
+			});
+
+			if (entries.length == 0) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let content_entries: Array<{
+				type: string,
+				id: string
+			}> = [];
+
+			for (const entry of entries) {
+				content_entries.push({
+					type: entry.getDataValue("type"),
+					id: entry.getDataValue("content_id")
+				});
+			}
+
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: {
+						count: entries.length,
+						entries: content_entries
+					}
+				}
+			});
+		} else {
+			res.code(400).send({
+				status: Status.BH_ERROR,
+				content: "page"
+			});
+			return;
+		}
+	});
+
+	app.get<{
+		Params: IGetContentByUserIdAndType
+	}>("/user/:user_id/:type/:page", {
+		schema: {
+			tags: ["Content"],
+			params: {
+				type: 'object',
+				properties: {
+					user_id: { type: 'string' },
+					type: { type: 'string' },
+					page: { type: 'number' }
+				}
+			},
+			response: genBasicResponses({
+				page: { type: 'object', additionalProperties: {} }
+			})
+		} as FastifySchema
+	}, async (req, res) => {
+		if (await User.findOne({ where: { user_id: req.params.user_id } }) == null) {
+			res.code(400).send({
+				status: Status.BH_NOT_FOUND,
+				content: ""
+			});
+			return;
+		}
+
+		if (req.params.page == 0) {
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: await getUserPageZero(req.params.user_id)
+				}
+			});
+		} else if (req.params.page > 0) {
+			if (ContentTypes.getTypeByName(req.params.type) == null) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let entries = await contentModels.get(req.params.type).findAll({
+				where: {
+					user_id: req.params.user_id
+				},
+				limit: 32,
+				offset: (req.params.page - 1) * 32
+			});
+
+			if (entries.length == 0) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let content_entries: Array<string> = [];
+
+			for (const entry of entries) {
+				content_entries.push(entry.getDataValue("content_id"));
+			}
+
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: {
+						count: entries.length,
+						entries: content_entries
+					}
+				}
+			});
+		} else {
+			res.code(400).send({
+				status: Status.BH_ERROR,
+				content: "page"
+			});
+			return;
+		}
+	});
+
+	app.get<{
+		Params: IGetAllContentTypeSorted
+	}>("/:type/all/:sort/:page", {
+		schema: {
+			tags: ["Content"],
+			params: {
+				type: 'object',
+				properties: {
+					type: { type: 'string' },
+					sort: {
+						type: 'string',
+						enum: [
+							"date.ascending",
+							"date.descending"
+						]
+					},
+					page: { type: 'number' }
+				}
+			},
+			response: genBasicResponses({
+				page: { type: 'object', additionalProperties: {} }
+			})
+		} as FastifySchema
+	}, async (req, res) => {
+		if (req.params.page == 0) {
+			let total = await Lookup.count({});
+			let contents: Array<{
+				type: string,
+				total: number
+			}> = [];
+
+			for (const type of ContentTypes.types) {
+				let model = contentModels.get(type.name);
+				let total = await model.count({});
+
+				contents.push({
+					type: type.name,
+					total: total
+				});
+			}
+
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: {
+						total: total,
+						contents: contents,
+						pages: Math.ceil(total / 32),
+						per_page: 32,
+						is_there_next_page: total > 0
+					}
+				}
+			});
+		} else if (req.params.page > 0) {
+			if (ContentTypes.getTypeByName(req.params.type) == null) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let orderCommand: Array<string> = [];
+
+			if (req.params.sort == "date.ascending") {
+				orderCommand = ["createdAt", "ASC"];
+			} else if (req.params.sort == "date.descending") {
+				orderCommand = ["createdAt", "DESC"];
+			}
+
+			let entries = await contentModels.get(req.params.type).findAll({
+				limit: 32,
+				offset: (req.params.page - 1) * 32,
+				order: [orderCommand as any]
+			});
+
+			if (entries.length == 0) {
+				res.code(400).send({
+					status: Status.BH_NOT_FOUND,
+					content: ""
+				});
+				return;
+			}
+
+			let content_entries: Array<string> = [];
+
+			for (const entry of entries) {
+				content_entries.push(entry.getDataValue("content_id"));
+			}
+
+			res.send({
+				status: Status.BH_SUCCESS,
+				content: {
+					page: {
+						count: entries.length,
+						entries: content_entries
+					}
+				}
+			});
+		} else {
+			res.code(400).send({
+				status: Status.BH_ERROR,
+				content: "page"
+			});
+			return;
 		}
 	});
 

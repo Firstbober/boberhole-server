@@ -36,8 +36,33 @@ GET  /api/v1/content/:content_id
 POST /api/v1/content/add (Rate limit: 30 req/min)
 POST /api/v1/content/remove/:content_id
 POST /api/v1/content/:content_id/edit
+GET  /api/v1/content/:type/all/:sort/:page
 
-# GET  /api/v1/content/:type/get_popular/:page
+sort
+[
+	date.ascending,
+	date.descending
+]
+
+Page 0:
+{
+	"total": number (total count of content made by user),
+	"contents": [
+		{
+			"type": content type,
+			"total": total count of this content type
+		}
+	],
+	"pages": number of pages,
+	"per_page": number of entries per page,
+	"is_there_next_page": "true/false"
+},
+
+Page >= 1:
+{
+	"count": number of entries in this page,
+	"entries: [ content object ]
+}
 
 == Admin ==
 

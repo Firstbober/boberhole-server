@@ -28,7 +28,8 @@ app.register(fastify_swagger, {
 		tags: [
 			{ name: "Account", description: "Account related stuff" },
 			{ name: "User", description: "User related stuff" },
-			{ name: "Media", description: "Resource uploading and downloading"}
+			{ name: "Media", description: "Resource uploading and downloading" },
+			{ name: "Content", description: "Content management related stuff" }
 		]
 	},
 	staticCSP: true,
