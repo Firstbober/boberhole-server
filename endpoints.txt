@@ -35,8 +35,9 @@ GET  /api/v1/content/user/:user_id/:type/:page
 GET  /api/v1/content/:content_id
 POST /api/v1/content/add (Rate limit: 30 req/min)
 POST /api/v1/content/remove/:content_id
-GET  /api/v1/content/:type/get_popular/:page
 POST /api/v1/content/:content_id/edit
+
+# GET  /api/v1/content/:type/get_popular/:page
 
 == Admin ==
 
@@ -77,6 +78,7 @@ BH_SIGN_IN_USER_NOT_FOUND
 
 BH_CONTENT_INVALID_TYPE
 BH_CONTENT_INVALID_BODY
+BH_CONTENT_INVALID_RESOURCE_REF
 
 -------------------------------------
 
@@ -105,18 +107,6 @@ Content types:
 	"content": content (object)
 }
 
-bh.content.type.vote (editable: ["up_vote"])
-{
-	"attached_to": string (content id),
-	"up_vote": boolean (true for up, false for down)
-}
-
-bh.content.type.comment (editable: ["content"])
-{
-	"attached_to": string (content id),
-	"content: string (max 2000 char)
-}
-
 bh.content.type.video (editable: ["title", "description"])
 {
 	"title": string (max 70 char),
@@ -137,6 +127,11 @@ bh.content.type.game (editable: ["title"])
 	bh.content.game.type.flash_player,
 	bh.content.game.type.html5
 ]
+
+bh.content.type.comment (editable: ["content"])
+{
+	"content: string (max 2000 char)
+}
 
 bh.content.type.booru.image
 {

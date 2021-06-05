@@ -6,6 +6,7 @@ export enum Status {
 	BH_BAD_JSON = "BH_BAD_JSON",
 	BH_NOT_FOUND = "BH_NOT_FOUND",
 	BH_UNKNOWN = "BH_UNKNOWN",
+	BH_NOT_PERMITTED = "BH_NOT_PERMITTED",
 	BH_TOO_LARGE = "BH_TOO_LARGE",
 	BH_NO_DATA = "BH_NO_DATA"
 }
@@ -60,14 +61,14 @@ import * as cryptoRandomString from 'crypto-random-string';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { Session } from './user';
 
-export async function generateIdForModel(model: any, model_name: string, len: number = 12) {
+export async function generateIdForModel(model: any, model_name: string, prefix: string = "", len: number = 12) {
 	let id: string;
 	let found_good_id = false;
 
 	let where = {};
 
 	do {
-		id = cryptoRandomString({ length: len, type: 'alphanumeric' });
+		id = prefix + cryptoRandomString({ length: len, type: 'alphanumeric' });
 		where[model_name + "_id"] = id;
 		let models = await model.findAll({
 			where: where

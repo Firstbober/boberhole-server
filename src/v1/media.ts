@@ -8,11 +8,11 @@ import { pipeline } from "stream";
 const pump = util.promisify(pipeline);
 
 import { genBasicResponses, genAuthHeader, Status, generateIdForModel, getAuthorizationFromHeader } from "./common";
-import { Events, sendEvent, listenEvent } from "../events";
 import { ContentTypes, MiBtoBytes, IContentType } from "./content";
 
 import * as unzipper from "unzipper";
 import * as mime from "mime-types";
+import * as dayjs from "dayjs";
 
 const mediaDb = new Sequelize({
 	dialect: 'sqlite',
@@ -52,6 +52,71 @@ interface IResourceGetFileParams {
 	filename: string
 }
 
+setInterval(() => {
+	Resource.findAll({}).then((value) => {
+		value.forEach((resource) => {
+			let date = new Date(resource.getDataValue("createdAt"));
+
+			if (dayjs(date).add(15, 'minutes') <= dayjs()) {
+				if (JSON.parse(resource.getDataValue("used_in_contents")).length == 0) {
+					resource.destroy();
+				}
+			}
+		});
+	});
+}, 900000); // 15 minutes
+
+export async function checkIfResourceExists(resource_id: string): Promise<boolean> {
+	let resource = await Resource.findOne({
+		where: {
+			resource_id: resource_id
+		}
+	});
+
+	return resource != null;
+}
+
+export async function markAsUsedInContent(resource_id: string, content_id: string) {
+	let resource = await Resource.findOne({
+		where: {
+			resource_id: resource_id
+		}
+	});
+
+	if (resource == null) {
+		return;
+	}
+
+	let usedInContents: Array<string> = JSON.parse(resource.getDataValue("used_in_contents"));
+	usedInContents.push(content_id);
+
+	resource.setDataValue("used_in_contents", JSON.stringify(usedInContents));
+	resource.save();
+}
+
+export async function removeContentFromBeingUsed(resource_id: string, content_id: string) {
+	let resource = await Resource.findOne({
+		where: {
+			resource_id: resource_id
+		}
+	});
+
+	if (resource == null) {
+		return;
+	}
+
+	let usedInContents: Array<string> = JSON.parse(resource.getDataValue("used_in_contents"));
+	let index = usedInContents.indexOf(content_id);
+
+	if (index == -1) {
+		return;
+	}
+
+	usedInContents.splice(index, 1);
+
+	resource.setDataValue("used_in_contents", JSON.stringify(usedInContents));
+	resource.save();
+}
 
 export default function (app: FastifyInstance, _opts: any, done: any) {
 	app.put<{

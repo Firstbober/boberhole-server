@@ -8,7 +8,7 @@ import { VERSION, Status } from "./v1/common";
 import account from "./v1/account";
 import user from "./v1/user";
 import media from "./v1/media";
-import "./v1/content";
+import content from "./v1/content";
 
 import { exit } from "process";
 
@@ -40,6 +40,7 @@ app.register(fastify_multipart);
 app.register(account, { prefix: "/api/v1/account" });
 app.register(user, { prefix: "/api/v1/user" });
 app.register(media, { prefix: "/api/v1/media" });
+app.register(content, { prefix: "/api/v1/content" });
 
 app.setErrorHandler((error, _req, res) => {
 	if (error.validation) {
