@@ -4,7 +4,7 @@
 - [X] Account
 - [X] User
 - [X] Media
-- [ ] Content
+- [X] Content
 - [ ] Admin
 - [ ] Search
 
