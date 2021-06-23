@@ -862,7 +862,15 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			let content_entries: Array<string> = [];
 
 			for (const entry of entries) {
-				content_entries.push(entry.getDataValue("content_id"));
+				let lookedup = await Lookup.findOne({
+					where: {
+						content_id: entry.getDataValue("content_id")
+					}
+				});
+
+				if(lookedup != null) {
+					content_entries.push(lookedup.getDataValue("lookup_id"));
+				}
 			}
 
 			res.send({
