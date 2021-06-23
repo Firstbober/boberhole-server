@@ -556,7 +556,11 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				content_id: { type: 'string' }
 			})
-		} as FastifySchema
+		} as FastifySchema,
+		preHandler: app.rateLimit({
+			max: 30,
+			timeWindow: '1 minute'
+		})
 	}, async (req, res) => {
 		let auth = await getAuthorizationFromHeader(req, res);
 		if (auth) {

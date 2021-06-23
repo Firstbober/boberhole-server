@@ -84,7 +84,6 @@ GET  /api/v1/search/:query/:page (Rate limit: 30 req/min)
 
 Statuses:
 BH_SUCCESS - Success
-BH_RATE_LIMITED - Rate limited
 BH_ERROR - Error
 BH_INAVLID_AUTHORIZATION - Authorization token is invalid
 BH_BAD_JSON - Invalid JSON

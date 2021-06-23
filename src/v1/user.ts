@@ -5,6 +5,7 @@ import * as argon2 from "argon2";
 import { Events, sendEvent, listenEvent } from "../events";
 
 import { DataTypes, Sequelize } from "sequelize";
+import { RateLimitOptions } from "fastify-rate-limit";
 const userDb = new Sequelize({
 	dialect: 'sqlite',
 	storage: `${config.data.database}/user.db`
@@ -109,6 +110,11 @@ interface IUserRemoveAccountBody {
 	password: string
 }
 
+const UserRateLimit: RateLimitOptions = {
+	max: 10,
+	timeWindow: '1 minute'
+};
+
 export default function (app: FastifyInstance, _opts: any, done: any) {
 	app.get("/email", {
 		schema: {
@@ -191,7 +197,8 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				changed: { type: 'array' }
 			})
-		}  as FastifySchema
+		} as FastifySchema,
+		preHandler: app.rateLimit(UserRateLimit)
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then(async (auth) => {
 			if (auth) {
@@ -279,7 +286,8 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				required: ['password']
 			},
 			response: genBasicResponses({})
-		}  as FastifySchema
+		} as FastifySchema,
+		preHandler: app.rateLimit(UserRateLimit)
 	}, (req, res) => {
 		getAuthorizationFromHeader(req, res).then((auth) => {
 			if (auth) {

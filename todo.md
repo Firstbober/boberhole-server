@@ -9,4 +9,4 @@
 - [X] Search
 
 ## Security
-- [ ] Rate limit
+- [X] Rate limit

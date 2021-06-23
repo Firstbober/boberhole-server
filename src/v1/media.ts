@@ -138,7 +138,11 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					}
 				}
 			}
-		} as FastifySchema
+		} as FastifySchema,
+		preHandler: app.rateLimit({
+			max: 5,
+			timeWindow: '1 minute'
+		})
 	}, async (req, res) => {
 		if (await getAuthorizationFromHeader(req, res)) {
 			let fileSizeLimit = MiBtoBytes(16);

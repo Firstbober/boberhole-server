@@ -3,6 +3,7 @@ import config from "../config/default";
 
 import fastify_swagger from "fastify-swagger";
 import fastify_multipart from "fastify-multipart";
+import fastify_rate_limit from "fastify-rate-limit";
 
 import { VERSION, Status } from "./v1/common";
 import account from "./v1/account";
@@ -39,6 +40,10 @@ app.register(fastify_swagger, {
 	exposeRoute: true
 });
 app.register(fastify_multipart);
+app.register(fastify_rate_limit, {
+	max: 80,
+	timeWindow: '1 minute'
+});
 
 app.register(account, { prefix: "/api/v1/account" });
 app.register(user, { prefix: "/api/v1/user" });

@@ -24,7 +24,11 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			response: genBasicResponses({
 				page: { type: 'object', additionalProperties: {} }
 			})
-		} as FastifySchema
+		} as FastifySchema,
+		preHandler: app.rateLimit({
+			max: 30,
+			timeWindow: '1 minute'
+		})
 	}, async (req, res) => {
 		res.send({
 			status: Status.BH_SUCCESS,
