@@ -9,6 +9,7 @@ import account from "./v1/account";
 import user from "./v1/user";
 import media from "./v1/media";
 import content from "./v1/content";
+import search from "./v1/search";
 
 import { exit } from "process";
 
@@ -29,7 +30,8 @@ app.register(fastify_swagger, {
 			{ name: "Account", description: "Account related stuff" },
 			{ name: "User", description: "User related stuff" },
 			{ name: "Media", description: "Resource uploading and downloading" },
-			{ name: "Content", description: "Content management related stuff" }
+			{ name: "Content", description: "Content management related stuff" },
+			{ name: "Search", description: "Searching between the content" }
 		]
 	},
 	staticCSP: true,
@@ -42,6 +44,7 @@ app.register(account, { prefix: "/api/v1/account" });
 app.register(user, { prefix: "/api/v1/user" });
 app.register(media, { prefix: "/api/v1/media" });
 app.register(content, { prefix: "/api/v1/content" });
+app.register(search, { prefix: "/api/v1/search" });
 
 app.setErrorHandler((error, _req, res) => {
 	if (error.validation) {

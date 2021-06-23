@@ -24,7 +24,10 @@ export interface IContentDataField {
 	resourceReference?: boolean,
 
 	// Requires specified mime-type?
-	acceptedMimeTypes?: Array<string>
+	acceptedMimeTypes?: Array<string>,
+
+	// Can be searched?
+	allowSearch?: boolean
 }
 
 export interface IContentType {
@@ -65,13 +68,15 @@ export const ContentTypes: IContentTypes = {
 					name: "title",
 					type: DataFieldType.STRING,
 					maxLength: 70,
-					minLength: 1
+					minLength: 1,
+					allowSearch: true
 				},
 				{
 					name: "description",
 					type: DataFieldType.STRING,
 					maxLength: 2000,
-					minLength: 0
+					minLength: 0,
+					allowSearch: true
 				},
 				{
 					name: "video",
@@ -97,7 +102,8 @@ export const ContentTypes: IContentTypes = {
 					name: "title",
 					type: DataFieldType.STRING,
 					maxLength: 70,
-					minLength: 1
+					minLength: 1,
+					allowSearch: true
 				},
 				{
 					name: "original_authors",
@@ -109,7 +115,8 @@ export const ContentTypes: IContentTypes = {
 				},
 				{
 					name: "type",
-					type: DataFieldType.STRING
+					type: DataFieldType.STRING,
+					allowSearch: true
 				},
 				{
 					name: "game",
@@ -166,7 +173,7 @@ export const ContentTypes: IContentTypes = {
 };
 
 import config from "../../config/default";
-import { DataTypes, Model, ModelCtor, Sequelize } from "sequelize";
+import { DataTypes, Model, ModelCtor, Op, Sequelize } from "sequelize";
 
 const contentDb = new Sequelize({
 	dialect: 'sqlite',
@@ -413,6 +420,20 @@ async function getContentFromLookup(lookup_id: string): Promise<ILookedUpContent
 	};
 }
 
+async function getLookupFromContent(content_id: string): Promise<string | null> {
+	let lookedup = await Lookup.findOne({
+		where: {
+			content_id: content_id
+		}
+	});
+
+	if (lookedup != null) {
+		return lookedup.getDataValue("lookup_id");
+	} else {
+		return null;
+	}
+}
+
 async function getUserPageZero(user_id: string): Promise<Object> {
 	let total = await Lookup.count({ where: { user_id: user_id } });
 	let contents: Array<{
@@ -437,6 +458,84 @@ async function getUserPageZero(user_id: string): Promise<Object> {
 		per_page: 32,
 		is_there_next_page: total > 0
 	};
+}
+
+export async function searchBetweenContent(page: number, query: string) {
+	let found = new Array();
+
+	for (const type of ContentTypes.types) {
+		let columnsToSearch = [];
+
+		for (const field of type.fields) {
+			if (!field.allowSearch) {
+				continue;
+			}
+
+			if (field.type == DataFieldType.STRING) {
+				let obj = {};
+				obj[field.name] = {
+					[Op.like]: query
+				};
+
+				columnsToSearch.push(obj);
+			}
+		}
+
+		if (Object.keys(columnsToSearch).length == 0) {
+			continue;
+		}
+
+		let result = await contentModels.get(type.name).findAll({
+			where: {
+				[Op.or]: columnsToSearch
+			}
+		});
+
+		if (result.length == 0) {
+			continue;
+		}
+
+		found.push([type.name, result]);
+	}
+
+	if (page == 0) {
+		let total = 0;
+		let contents = [];
+
+		found.forEach(([key, val]) => {
+			total += val.length;
+			contents.push({
+				total: val.length,
+				type: key
+			});
+		});
+
+		return {
+			total: total,
+			contents: contents,
+			pages: Math.ceil(total / 32),
+			per_page: 32,
+			is_there_next_page: total > 0
+		};
+	} else if (page >= 1) {
+		let entries = [];
+		let count = 0;
+
+		for (const [key, val] of found) {
+			for (const model of val) {
+				entries.push({
+					type: key,
+					id: await getLookupFromContent(model.getDataValue("content_id"))
+				});
+			}
+			count += val.length;
+		}
+
+		return {
+			count: count,
+			entries: entries
+		};
+	}
 }
 
 export default function (app: FastifyInstance, _opts: any, done: any) {
@@ -868,7 +967,7 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 					}
 				});
 
-				if(lookedup != null) {
+				if (lookedup != null) {
 					content_entries.push(lookedup.getDataValue("lookup_id"));
 				}
 			}

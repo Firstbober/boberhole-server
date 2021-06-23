@@ -6,7 +6,7 @@
 - [X] Media
 - [X] Content
 - [ ] Admin
-- [ ] Search
+- [X] Search
 
 ## Security
 - [ ] Rate limit
