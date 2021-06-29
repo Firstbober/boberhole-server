@@ -128,7 +128,7 @@ Content types:
 	"by_user": string (user id),
 	"created_on": string (date),
 	"content_id": string (content id)
-	"content": content (object)
+	"data": content (object)
 }
 
 bh.content.type.video (editable: ["title", "description"])

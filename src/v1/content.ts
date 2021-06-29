@@ -687,6 +687,9 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 			},
 			response: genBasicResponses({
 				type: { type: 'string' },
+				by_user: { type: 'string' },
+				created_on: { type: 'string' },
+				content_id: { type: 'string' },
 				data: { type: 'object', additionalProperties: {} }
 			})
 		} as FastifySchema
@@ -711,6 +714,9 @@ export default function (app: FastifyInstance, _opts: any, done: any) {
 				status: Status.BH_SUCCESS,
 				content: {
 					type: content.type,
+					by_user: content.content.getDataValue("user_id") as string,
+					created_on: content.content.getDataValue("createdAt") as string,
+					content_id: req.params.content_id,
 					data: contentToReturn
 				}
 			});
